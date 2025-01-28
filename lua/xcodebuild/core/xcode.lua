@@ -229,50 +229,37 @@ end
 ---@param callback fun(destinations: XcodeDevice[])
 ---@return number # job id
 function M.get_destinations(projectFile, scheme, workingDirectory, callback)
-  local command = {
-    "xcodebuild",
-    get_project_param(projectFile),
-    projectFile,
-    "-showdestinations",
-    "-scheme",
-    scheme,
+  local result = {
+    {
+      platform = "iOS Simulator",
+      id = "5DB7A47A-6406-47EE-8328-7280F6781533",
+      os = "18.2",
+      name = "iPhone 16 Pro",
+    },
+    {
+      platform = "iOS Simulator",
+      id = "F2434551-90EE-4518-A8CC-2E5DCAE52B62",
+      os = "18.2",
+      name = "iPad mini (A17 Pro)",
+    },
+    {
+      platform = "watchOS Simulator",
+      id = "F551E567-1CAC-41B1-90F9-E162EB6E24AB",
+      os = "11.2",
+      name = "Apple Watch Series 10 (42mm)",
+    },
+    {
+      platform = "macOS",
+      arch = "arm64",
+      id = "00006000-001205E42238801E",
+      name = "My Mac",
+    },
   }
-  command = util.skip_nil(command)
-  command = xcodebuildOffline.wrap_command_if_needed(command)
-  debug_print("get_destinations", command)
 
-  return vim.fn.jobstart(command, {
-    stdout_buffered = true,
-    cwd = workingDirectory,
-    on_stdout = function(_, output)
-      local result = {}
-      local foundDestinations = false
-      local valuePattern = ":%s*([^@}]-)%s*[@}]"
-
-      for _, line in ipairs(output) do
-        local trimmedLine = util.trim(line)
-
-        if foundDestinations and trimmedLine == "" then
-          break
-        elseif foundDestinations then
-          local sanitizedLine = string.gsub(trimmedLine, ", ", "@")
-          local destination = {
-            platform = string.match(sanitizedLine, "platform" .. valuePattern),
-            variant = string.match(sanitizedLine, "variant" .. valuePattern),
-            arch = string.match(sanitizedLine, "arch" .. valuePattern),
-            id = string.match(sanitizedLine, "id" .. valuePattern),
-            name = string.match(sanitizedLine, "name" .. valuePattern),
-            os = string.match(sanitizedLine, "OS" .. valuePattern),
-            error = string.match(sanitizedLine, "error" .. valuePattern),
-          }
-          table.insert(result, destination)
-        elseif string.find(trimmedLine, "Available destinations") then
-          foundDestinations = true
-        end
-      end
-
+  return vim.fn.jobstart({"sleep", "1"}, {
+    on_exit = function()
       callback(result)
-    end,
+    end
   })
 end
 

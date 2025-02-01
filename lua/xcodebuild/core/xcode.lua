@@ -455,6 +455,9 @@ end
 ---@param opts XcodeBuildOptions
 ---@return number # job id
 function M.build_project(opts)
+  local appdata = require("xcodebuild.project.appdata")
+  vim.fn.delete(appdata.build_xcresult_filepath, "rf")
+
   local command = {
     "xcodebuild",
     opts.clean and "clean" or nil,
@@ -465,6 +468,8 @@ function M.build_project(opts)
     opts.scheme,
     "-destination",
     "id=" .. opts.destination,
+    "-resultBundlePath",
+    appdata.build_xcresult_filepath,
   }
   command = util.merge_array(command, opts.extraBuildArgs)
   command = util.skip_nil(command)
@@ -997,6 +1002,9 @@ end
 ---@param opts XcodeTestOptions
 ---@return number # job id
 function M.run_tests(opts)
+  local appdata = require("xcodebuild.project.appdata")
+  vim.fn.delete(appdata.test_xcresult_filepath, "rf")
+
   local command = {
     "xcodebuild",
     opts.withoutBuilding and "test-without-building" or "test",
@@ -1008,6 +1016,8 @@ function M.run_tests(opts)
     opts.projectFile,
     opts.testPlan and "-testPlan" or nil,
     opts.testPlan,
+    "-resultBundlePath",
+    appdata.test_xcresult_filepath,
   }
   command = util.merge_array(command, opts.extraTestArgs)
   command = util.skip_nil(command)

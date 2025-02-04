@@ -104,22 +104,6 @@ local function entry_maker(entry)
   }
 end
 
----Updates xcode-build-server config if needed.
-local function update_xcode_build_server_config()
-  local xcodeBuildServer = require("xcodebuild.integrations.xcode-build-server")
-
-  if not xcodeBuildServer.is_enabled() or not xcodeBuildServer.is_installed() then
-    return
-  end
-
-  local projectFile = projectConfig.settings.projectFile
-  local scheme = projectConfig.settings.scheme
-
-  if projectFile and scheme then
-    xcodeBuildServer.run_config(projectFile, scheme)
-  end
-end
-
 ---Stops the spinner animation.
 local function stop_telescope_spinner()
   if progressTimer then
@@ -498,8 +482,11 @@ function M.select_project(callback, opts)
       projectConfig.settings.projectFile = projectFile
     end
 
+    local xcodeBuildServer = require("xcodebuild.integrations.xcode-build-server")
+    xcodeBuildServer.clear_cached_schemes()
+
     projectConfig.save_settings()
-    update_xcode_build_server_config()
+    xcodeBuildServer.run_config_if_enabled()
     util.call(callback, projectFile)
   end, opts)
 end
@@ -517,10 +504,12 @@ function M.select_scheme(callback, opts)
 
   opts = opts or {}
 
+  local xcodeBuildServer = require("xcodebuild.integrations.xcode-build-server")
+
   local function selectScheme(scheme)
     projectConfig.settings.scheme = scheme
     projectConfig.save_settings()
-    update_xcode_build_server_config()
+    xcodeBuildServer.run_config_if_enabled(scheme)
 
     vim.defer_fn(function()
       util.call(callback, scheme)
@@ -537,6 +526,7 @@ function M.select_scheme(callback, opts)
       return scheme.name
     end)
 
+    xcodeBuildServer.update_cached_schemes(names)
     update_results(names, true)
 
     if util.is_empty(names) then

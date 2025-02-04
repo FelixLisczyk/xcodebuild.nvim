@@ -39,6 +39,7 @@ Xcresult File Parser ························ |xcodebuil
 Code Coverage ······························ |xcodebuild.code_coverage.coverage|
 Code Coverage Report ························· |xcodebuild.code_coverage.report|
 DAP Integration ·································· |xcodebuild.integrations.dap|
+DAP Symbolicate ······················ |xcodebuild.integrations.dap-symbolicate|
 Remote Debugger Integration ·········· |xcodebuild.integrations.remote_debugger|
 LSP Integration ·································· |xcodebuild.integrations.lsp|
 nvim-tree Integration ······················ |xcodebuild.integrations.nvim-tree|
@@ -198,6 +199,7 @@ M.setup({options})                                            *xcodebuild.setup*
         },
         xcode_build_server = {
           enabled = true, -- enable calling "xcode-build-server config" when project config changes
+          guess_scheme = false, -- run "xcode-build-server config" with the scheme matching the current file's target
         },
         nvim_tree = {
           enabled = true, -- enable updating Xcode project files when using nvim-tree
@@ -1828,7 +1830,7 @@ M.is_configured()                      *xcodebuild.project.config.is_configured*
 
                                      *xcodebuild.project.config.update_settings*
 M.update_settings({opts}, {callback})
-  Updates the settings (`appPath`, `productName`, and `bundleId`) based on
+  Updates the settings (`appPath`, `productName`, `buildDir`, and `bundleId`) based on
   the current project.
   Calls `xcodebuild` commands to get the build settings.
 
@@ -2238,6 +2240,14 @@ M.guess_target({groupPath})            *xcodebuild.project.manager.guess_target*
 
   Returns: ~
     (string[]|nil)
+
+
+                           *xcodebuild.project.manager.get_current_file_targets*
+M.get_current_file_targets()
+  Finds the targets for the current file.
+
+  Returns: ~
+    (string[])
 
 
                           *xcodebuild.project.manager.show_current_file_targets*
@@ -3755,6 +3765,25 @@ M.setup({codelldbPath}, {loadBreakpoints})
 
 
 ==============================================================================
+DAP Symbolicate                        *xcodebuild.integrations.dap-symbolicate*
+
+This module provides a DAP integration for symbolication of crash call stacks.
+
+                          *xcodebuild.integrations.dap-symbolicate.process_logs*
+M.process_logs({output}, {on_symbolicate})
+  Collects the crash call stack from the console output.
+
+  Parameters: ~
+    {output}          (string[]) # the console output
+    {on_symbolicate}  (fun(symbolicatedCallStack:string[])) # callback with the symbolicated call stack
+
+
+                           *xcodebuild.integrations.dap-symbolicate.dap_started*
+M.dap_started()
+  Use to notify the module that the debugger has started.
+
+
+==============================================================================
 Remote Debugger Integration            *xcodebuild.integrations.remote_debugger*
 
 This module is responsible for the integration of `phymobiledevice3`
@@ -4047,6 +4076,50 @@ M.run_config({projectFile}, {scheme})
 
   Returns: ~
     (number)   job id
+
+
+              *xcodebuild.integrations.xcode-build-server.run_config_if_enabled*
+M.run_config_if_enabled({scheme})
+  Calls "config" command of xcode-build-server in order to update buildServer.json file.
+  This function is called only if the integration is enabled and the
+  xcode-build-server is installed.
+
+  Parameters: ~
+    {scheme}  (string|nil)
+
+
+              *xcodebuild.integrations.xcode-build-server.update_cached_schemes*
+M.update_cached_schemes({schemes})
+  Updates cached schemes.
+
+  Parameters: ~
+    {schemes}  (string[])
+
+
+               *xcodebuild.integrations.xcode-build-server.clear_cached_schemes*
+M.clear_cached_schemes()
+  Clears cached schemes.
+
+
+                                                       *xcodebuild.guess-scheme*
+                       *xcodebuild.integrations.xcode-build-server.guess_scheme*
+M.guess_scheme()
+  This function is responsible for running the `xcode-build-server config` command
+  with the scheme matching the current file's target. It's not perfect, because
+  schemes can have different names than targets, but it might be helpful in some
+  cases.
+
+  You can enable it by setting `guess_scheme` to `true` in the configuration.
+  It will be triggered every time you enter a `Swift` buffer, so the performance
+  might be affected.
+
+  Schemes are cached to avoid unnecessary calls to `xcodebuild` when switching
+  between files. To clear the cache, you can use the `clear_cached_schemes`
+  function, restart Neovim, or show schemes picker.
+
+
+                              *xcodebuild.integrations.xcode-build-server.setup*
+M.setup()
 
 
 ==============================================================================
